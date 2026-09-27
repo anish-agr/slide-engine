@@ -1,0 +1,1026 @@
+<title>Deck Title</title>
+<style id="deck-css">
+/* ============================================================
+   BLUEPRINT DECK ENGINE
+   Self-contained. No external assets. Works offline.
+   ============================================================ */
+
+/* ---- tokens: light = engineering paper -------------------- */
+:root{
+  --ground:#EEF1F6;
+  --stage:#FBFCFE;
+  --panel:#E4E9F1;
+  --ink:#141B2D;
+  --ink-soft:#4B5568;
+  --ink-faint:#8A93A6;
+  --rule:#C9D2E0;
+  --rule-soft:#DFE5EF;
+  --accent:#B4530A;
+  --accent-ink:#8A3F07;
+  --accent-wash:#FBEEE0;
+  --teal:#0E6E82;
+  --teal-wash:#DFEEF2;
+  --code-bg:#E9EDF4;
+  --code-ink:#1B2438;
+  --grid:#D7DEEA;
+  --shadow:0 1px 2px rgba(20,27,45,.08),0 12px 32px rgba(20,27,45,.10);
+  --stage-w:1280px;
+  --stage-h:720px;
+
+  --sans:"Segoe UI Variable Display","Segoe UI",ui-sans-serif,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Cascadia Mono","Cascadia Code",ui-monospace,Consolas,"SF Mono","Roboto Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0B1120;
+    --stage:#111A2C;
+    --panel:#16223A;
+    --ink:#E7ECF5;
+    --ink-soft:#A8B3C7;
+    --ink-faint:#6C7A93;
+    --rule:#2A3752;
+    --rule-soft:#1E2A42;
+    --accent:#F0A046;
+    --accent-ink:#F6BC7A;
+    --accent-wash:#2E2113;
+    --teal:#4FC3D9;
+    --teal-wash:#102C36;
+    --code-bg:#0D1626;
+    --code-ink:#D5DEEE;
+    --grid:#1B2740;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0B1120;
+  --stage:#111A2C;
+  --panel:#16223A;
+  --ink:#E7ECF5;
+  --ink-soft:#A8B3C7;
+  --ink-faint:#6C7A93;
+  --rule:#2A3752;
+  --rule-soft:#1E2A42;
+  --accent:#F0A046;
+  --accent-ink:#F6BC7A;
+  --accent-wash:#2E2113;
+  --teal:#4FC3D9;
+  --teal-wash:#102C36;
+  --code-bg:#0D1626;
+  --code-ink:#D5DEEE;
+  --grid:#1B2740;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+body.handout{overflow:auto}
+
+/* ---- stage ------------------------------------------------ */
+#viewport{
+  position:fixed;inset:0;display:grid;place-items:center;
+}
+#stage{
+  width:var(--stage-w);height:var(--stage-h);
+  position:relative;transform-origin:center center;
+  background:var(--stage);
+  border:1px solid var(--rule);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+/* faint blueprint grid, the subject's own vernacular */
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:40px 40px;
+  opacity:.32;
+}
+
+.slide{
+  position:absolute;inset:0;
+  padding:64px 76px 92px;
+  display:none;flex-direction:column;gap:22px;
+}
+.slide.active{display:flex}
+
+/* ---- typography ------------------------------------------- */
+.eyebrow{
+  font-family:var(--mono);font-size:14px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);
+  display:flex;align-items:center;gap:12px;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+h1{
+  font-size:76px;line-height:1.02;letter-spacing:-.028em;font-weight:700;
+  margin:0;text-wrap:balance;max-width:20ch;
+}
+h2{
+  font-size:46px;line-height:1.08;letter-spacing:-.022em;font-weight:700;
+  margin:0;text-wrap:balance;max-width:24ch;
+}
+h3{
+  font-size:25px;line-height:1.2;letter-spacing:-.01em;font-weight:650;margin:0;
+}
+p,li{font-size:24px;line-height:1.45;color:var(--ink-soft);margin:0;max-width:62ch}
+.lead{font-size:29px;color:var(--ink);max-width:34ch;line-height:1.34}
+strong{color:var(--ink);font-weight:650}
+em{font-style:normal;color:var(--accent-ink);font-weight:600}
+ul{margin:0;padding-left:26px;display:flex;flex-direction:column;gap:12px}
+li::marker{color:var(--accent)}
+.mono{font-family:var(--mono)}
+.small{font-size:19px}
+.tiny{font-size:16px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:.03em}
+
+/* ---- layout helpers --------------------------------------- */
+.body{display:flex;flex-direction:column;gap:20px;flex:1;min-height:0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start;flex:1;min-height:0}
+.cols.wide-right{grid-template-columns:.85fr 1.15fr}
+.cols.wide-left{grid-template-columns:1.15fr .85fr}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.center{justify-content:center;align-items:flex-start}
+.fill{flex:1;display:grid;place-items:center;min-height:0}
+.fill svg{max-width:100%;max-height:100%}
+
+/* ---- components ------------------------------------------- */
+.card{
+  background:var(--panel);border:1px solid var(--rule-soft);
+  padding:20px 24px;display:flex;flex-direction:column;gap:10px;
+}
+.card h3{font-size:21px}
+.card p,.card li{font-size:19px;line-height:1.4}
+
+.rule-box{
+  border-left:3px solid var(--accent);background:var(--accent-wash);
+  padding:18px 24px;display:flex;flex-direction:column;gap:8px;
+}
+.rule-box .label{
+  font-family:var(--mono);font-size:13px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent-ink);
+}
+.rule-box p{color:var(--ink);font-size:23px;max-width:52ch}
+.rule-box.tight{padding:12px 18px;gap:6px}
+.rule-box.tight p{font-size:19px;line-height:1.4}
+
+.chat{
+  border:1px dashed var(--teal);background:var(--teal-wash);
+  padding:16px 22px;display:flex;align-items:center;gap:16px;
+}
+.chat .tag{
+  font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--teal);white-space:nowrap;
+}
+.chat p{color:var(--ink);font-size:21px;margin:0}
+
+pre{
+  font-family:var(--mono);font-size:19px;line-height:1.55;
+  background:var(--code-bg);color:var(--code-ink);
+  border:1px solid var(--rule-soft);
+  padding:18px 22px;margin:0;overflow-x:auto;tab-size:2;
+}
+pre.sm{font-size:16.5px;line-height:1.5}
+pre.xs{font-size:14.5px;line-height:1.34;padding:10px 16px}
+code{font-family:var(--mono);font-size:.92em;background:var(--code-bg);padding:1px 6px;color:var(--code-ink)}
+pre code{background:none;padding:0;font-size:inherit}
+.k{color:var(--accent-ink);font-weight:600}
+.c{color:var(--ink-faint);font-style:italic}
+.s{color:var(--teal)}
+
+table{border-collapse:collapse;width:100%;font-size:19px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--rule-soft)}
+th{
+  font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:500;border-bottom:1px solid var(--rule);
+}
+td{color:var(--ink-soft)}
+td:first-child{color:var(--ink);font-weight:600}
+td.num,th.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* section divider slides */
+.slide.divider{justify-content:center;background:var(--panel)}
+.slide.divider h1{font-size:92px;max-width:16ch}
+.slide.divider .eyebrow::after{display:none}
+
+/* title slide */
+.slide.title{justify-content:center;gap:28px}
+.slide.title .meta{display:flex;gap:36px;font-family:var(--mono);font-size:16px;color:var(--ink-faint);letter-spacing:.04em}
+
+/* fragments */
+.frag{opacity:0;transition:opacity .18s ease}
+.frag.on{opacity:1}
+/* a fragment that is always visible and only lights up */
+.frag.hl{opacity:1;transition:background-color .18s ease,color .18s ease}
+table.matrix td.frag.hl.on{background:var(--accent-wash);color:var(--accent-ink);font-weight:700}
+@media (prefers-reduced-motion:reduce){.frag{transition:none}}
+
+/* ---- console rail ----------------------------------------- */
+#rail{
+  position:absolute;left:0;right:0;bottom:0;height:46px;
+  border-top:1px solid var(--rule);background:var(--stage);
+  display:flex;align-items:center;gap:20px;padding:0 28px;
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;
+  color:var(--ink-faint);text-transform:uppercase;
+}
+#rail .sec{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#rail .spacer{flex:1 1 auto;min-width:12px}
+#rail .num{flex:0 0 auto;font-variant-numeric:tabular-nums}
+#bar{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);transition:width .2s ease}
+
+table.matrix{width:auto;font-family:var(--mono)}
+table.matrix td,table.matrix th{padding:7px 14px;text-align:center;border:1px solid var(--rule-soft);font-size:19px}
+table.matrix th{background:var(--panel);color:var(--ink-soft);font-size:14px;letter-spacing:.06em}
+table.matrix td{color:var(--ink);font-weight:600}
+table.matrix td.hi{background:var(--accent-wash);color:var(--accent-ink);font-weight:700}
+
+/* ---- homework grid ----------------------------------------- */
+.hw{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;flex:0 1 auto;min-height:0;align-content:start}
+.hw .card{padding:15px 17px;gap:8px}
+.hw .card h3{font-size:18px;color:var(--accent-ink);letter-spacing:.01em}
+.hw ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+.hw li{font-size:15.5px;line-height:1.36;color:var(--ink-soft);max-width:none;padding-left:2px}
+.hw li::marker{color:var(--accent);font-family:var(--mono);font-size:13px}
+.hw code{font-size:15px;padding:1px 4px}
+.hwnote{font-size:18px;line-height:1.38;flex:0 0 auto;color:var(--ink);border-left:3px solid var(--accent);
+  background:var(--accent-wash);padding:13px 20px;max-width:none}
+.hwnote strong{font-weight:650}
+
+/* ---- slide overview (grid) --------------------------------- */
+#ov{position:fixed;inset:0;z-index:70;background:var(--ground);display:none;overflow-y:auto;padding:22px 28px 48px}
+#ov.on{display:block}
+#ov-head{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:18px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+#ov-head b{color:var(--ink);font-size:15px;letter-spacing:.04em;text-transform:none;font-weight:650}
+#ov-head .sp{flex:1}
+#ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.ov-cell{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.ov-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
+  border:1px solid var(--rule);background:var(--stage)}
+.ov-scale{position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:top left}
+.ov-cell:hover .ov-frame{border-color:var(--accent)}
+.ov-cell.sel .ov-frame{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.ov-cell.now .ov-frame{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal)}
+.ov-cap{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-faint);
+  display:flex;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-cap b{color:var(--ink-soft);font-weight:600}
+
+/* ---- a denser list, for slides with a lot of vocabulary ---- */
+.tightlist{margin:0;padding-left:24px;display:flex;flex-direction:column;gap:7px}
+.tightlist li{font-size:18px;line-height:1.3;color:var(--ink-soft);max-width:60ch}
+.tightlist li::marker{color:var(--accent)}
+ul.small li,ol.small li{font-size:19px;line-height:1.34}
+
+/* ---- homework review: question text plus a revealed answer ---- */
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;flex:1;min-height:0;align-content:start}
+.qa .q{background:var(--panel);border:1px solid var(--rule-soft);padding:13px 17px;
+  display:flex;flex-direction:column;gap:7px;min-height:0}
+.qa .q .no{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink)}
+.qa .q p{font-size:17px;line-height:1.34;max-width:none;margin:0}
+.qa .q .ans{font-size:17px;line-height:1.34;color:var(--accent-ink);font-weight:650;
+  border-top:1px solid var(--rule);padding-top:7px;margin-top:auto}
+.qa .q .ans .mono{font-weight:600}
+
+/* ---- click cue inside presenter notes ---------------------- */
+.cue{font-family:var(--mono);font-size:13px;line-height:1.4;letter-spacing:.03em;
+  color:var(--accent-ink);background:var(--accent-wash);border-left:3px solid var(--accent);
+  padding:7px 12px;margin:11px 0;max-width:none}
+.stage-dir{font-style:normal;color:var(--teal);font-weight:600}
+
+/* ---- break slide controls ---------------------------------- */
+.breakbox{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+.breakrow{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:21px;color:var(--ink-soft)}
+.breakrow input{font-family:var(--mono);font-size:21px;width:88px;padding:9px 10px;
+  background:var(--stage);color:var(--ink);border:1px solid var(--rule);text-align:center}
+.breakrow button{font-family:var(--mono);font-size:15px;letter-spacing:.12em;text-transform:uppercase;
+  padding:11px 20px;background:var(--accent);color:var(--stage);border:none;cursor:pointer}
+.breakrow button:hover{background:var(--accent-ink)}
+.cd{font-family:var(--mono);font-size:112px;line-height:.95;font-variant-numeric:tabular-nums;
+  color:var(--accent);letter-spacing:-.03em}
+.cd.done{color:var(--teal)}
+.backat{font-family:var(--mono);font-size:24px;color:var(--ink-soft)}
+
+/* ---- notes drawer ----------------------------------------- */
+#notes{
+  position:fixed;right:0;top:0;bottom:0;width:440px;
+  background:var(--panel);border-left:1px solid var(--rule);
+  padding:26px 30px;overflow-y:auto;display:none;z-index:40;
+}
+#notes.on{display:block}
+.notes-body h4{
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent-ink);margin:20px 0 6px;
+}
+.notes-body h4:first-child{margin-top:0}
+.notes-body p,.notes-body li{font-size:15px;line-height:1.55;color:var(--ink-soft);max-width:none}
+.notes-body ul{padding-left:20px;gap:6px}
+.notes-body strong{color:var(--ink)}
+.notes-body pre{font-size:13px;padding:12px 14px}
+.notes-body code{font-size:13px}
+
+/* ---- help ------------------------------------------------- */
+#help{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:var(--stage);border:1px solid var(--rule);box-shadow:var(--shadow);
+  padding:32px 40px;z-index:60;display:none;
+}
+#help.on{display:block}
+#help h3{margin-bottom:16px}
+#help dl{display:grid;grid-template-columns:auto 1fr;gap:8px 22px;margin:0;font-size:16px}
+#help dt{font-family:var(--mono);color:var(--accent-ink)}
+#help dd{margin:0;color:var(--ink-soft)}
+kbd{
+  font-family:var(--mono);font-size:12px;border:1px solid var(--rule);
+  padding:2px 7px;background:var(--panel);color:var(--ink-soft);
+}
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:30;
+  font-family:var(--mono);font-size:12px;color:var(--ink-faint);letter-spacing:.06em;
+}
+
+/* ---- handout mode ----------------------------------------- */
+body.handout #viewport{position:static;display:block;padding:48px 32px 96px}
+body.handout #stage{
+  width:auto;max-width:1180px;height:auto;margin:0 auto;transform:none!important;
+  background:none;border:none;box-shadow:none;overflow:visible;
+}
+body.handout #stage::before{display:none}
+body.handout #rail,body.handout #notes,body.handout #hint{display:none}
+body.handout .slide{
+  position:relative;inset:auto;display:grid;
+  grid-template-columns:1.25fr 1fr;gap:36px;
+  padding:36px 0;border-bottom:1px solid var(--rule);
+  min-height:0;
+}
+body.handout .slide::before{
+  content:attr(data-n);position:absolute;left:-44px;top:40px;
+  font-family:var(--mono);font-size:13px;color:var(--ink-faint);
+}
+body.handout .slide > *:not(.notes-src){grid-column:1}
+body.handout .slide .body{gap:16px}
+body.handout .frag{opacity:1}
+body.handout .notes-src{
+  display:block;grid-column:2;grid-row:1/999;
+  background:var(--panel);border:1px solid var(--rule-soft);padding:22px 26px;
+  align-self:start;
+}
+body.handout h1{font-size:40px}
+body.handout h2{font-size:30px}
+body.handout p,body.handout li{font-size:17px}
+body.handout .lead{font-size:20px}
+body.handout pre{font-size:14px}
+body.handout .slide.divider{background:none;padding-top:56px}
+body.handout .slide.divider h1{font-size:34px;color:var(--accent-ink)}
+body.handout .fill svg{max-height:340px}
+.notes-src{display:none}
+
+#hdbar{
+  display:none;position:sticky;top:0;z-index:20;
+  background:var(--ground);border-bottom:1px solid var(--rule);
+  padding:14px 32px;font-family:var(--mono);font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);
+}
+body.handout #hdbar{display:block}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* ---- printing / save as PDF --------------------------------
+   Ctrl+P then "Save as PDF". Choose Landscape and switch ON
+   "Background graphics", or the dark slides will print blank.
+   One slide per page, every build revealed, notes hidden. */
+@page{ size: 13.33in 7.5in; margin: 0; }
+@media print{
+  :root{
+    --ground:#0B1120;--stage:#111A2C;--panel:#16223A;
+    --ink:#E7ECF5;--ink-soft:#A8B3C7;--ink-faint:#6C7A93;
+    --rule:#2A3752;--rule-soft:#1E2A42;
+    --accent:#F0A046;--accent-ink:#F6BC7A;--accent-wash:#2E2113;
+    --teal:#4FC3D9;--teal-wash:#102C36;
+    --code-bg:#0D1626;--code-ink:#D5DEEE;--grid:#1B2740;
+    --shadow:none;
+  }
+  html,body{background:var(--stage)!important;overflow:visible!important;height:auto!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #viewport{position:static!important;display:block!important;padding:0!important;place-items:initial!important}
+  #stage{width:1280px!important;height:auto!important;transform:none!important;
+    border:none!important;box-shadow:none!important;background:var(--stage)!important;overflow:visible!important}
+  #stage::before{display:none!important}
+  #rail,#notes,#ov,#hdbar,#help{display:none!important}
+  .slide{position:relative!important;inset:auto!important;display:flex!important;background:var(--stage)!important;
+    width:1280px!important;height:720px!important;padding:56px 68px!important;
+    break-after:page;page-break-after:always;border:none!important}
+  .slide.divider{background:var(--panel)!important}
+  .slide:last-child{break-after:auto;page-break-after:auto}
+  .frag{opacity:1!important}
+  table.matrix td.frag.hl{background:var(--accent-wash)!important;color:var(--accent-ink)!important}
+  .notes-src{display:none!important}
+  .breakrow button,.breakrow input{display:none!important}
+  pre,table,svg{break-inside:avoid;page-break-inside:avoid}
+}
+
+
+/* ---- svg diagram defaults --------------------------------- */
+svg .node{fill:var(--stage);stroke:var(--ink);stroke-width:2}
+svg .node-a{fill:var(--accent-wash);stroke:var(--accent);stroke-width:2.5}
+svg .node-t{fill:var(--teal-wash);stroke:var(--teal);stroke-width:2.5}
+svg .edge{stroke:var(--ink-soft);stroke-width:2;fill:none}
+svg .edge-a{stroke:var(--accent);stroke-width:3;fill:none}
+svg .lbl{font-family:var(--mono);font-size:17px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+svg .lbl-s{font-family:var(--mono);font-size:13px;fill:var(--ink-faint);text-anchor:middle}
+svg .lbl-a{font-family:var(--mono);font-size:13px;fill:var(--accent-ink);text-anchor:middle}
+svg .cell{fill:var(--stage);stroke:var(--ink-soft);stroke-width:1.5}
+svg .cell-a{fill:var(--accent-wash);stroke:var(--accent);stroke-width:2}
+svg .cell-t{fill:var(--teal-wash);stroke:var(--teal);stroke-width:2}
+svg .wall{fill:var(--ink-faint);stroke:var(--ink-soft);stroke-width:1.5}
+svg .badge{fill:var(--accent-wash);stroke:var(--accent);stroke-width:1.5}
+svg .badge-t{fill:var(--teal-wash);stroke:var(--teal);stroke-width:1.5}
+svg .lbl-t{font-family:var(--mono);font-size:13px;fill:var(--teal);text-anchor:middle}
+svg .dist{font-family:var(--mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+svg .dist-a{fill:var(--accent-ink)}
+svg .dist-t{fill:var(--teal)}
+</style>
+
+<div id="hdbar">Handout &amp; study view — every slide with full presenter notes. Press <kbd>H</kbd> to return to presenting.</div>
+
+<div id="viewport">
+  <div id="stage">
+
+  <!-- =========================================================
+       SLIDES. Copy a <section> to add one.
+       data-sec  = label shown in the bottom rail
+       data-n    = slide number shown in the rail and speaker view
+       data-min  = expected minutes; drives the pacing clock (speaker view)
+       .frag     = revealed on click. Same data-step = same click.
+       .notes-src= presenter notes, shown only in the speaker window (S)
+       ========================================================= -->
+
+  <section class="slide title active" data-sec="Opening" data-n="01" data-min="1">
+    <div class="eyebrow">Event or series</div>
+    <h1>Deck title</h1>
+    <p class="lead">One sentence on what this is about.</p>
+    <div class="meta"><span>Your Name</span><span>Topic</span></div>
+    <aside class="notes-src">
+      <h4>Script</h4>
+      <p>&ldquo;Word-for-word opening line.&rdquo;</p>
+      <p class="cue">[ START THE TIMER, press T ]</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-sec="Example" data-n="02" data-min="3">
+    <div class="eyebrow">Click-driven reveal</div>
+    <h2>A slide that builds on each click</h2>
+    <div class="cols">
+      <div class="stack">
+        <p>Always-visible text.</p>
+        <p class="frag" data-step="1" data-say="first point">Appears on click 1.</p>
+        <p class="frag" data-step="2" data-say="second point">Appears on click 2.</p>
+        <div class="rule-box frag" data-step="3" data-say="the takeaway">
+          <span class="label">Takeaway</span>
+          <p>Boxed conclusion, on click 3.</p>
+        </div>
+      </div>
+      <div class="fill">
+        <svg viewBox="0 0 300 200" width="420" height="280" role="img" aria-label="Two joined nodes">
+          <path d="M100 100 H200" class="edge"/>
+          <g class="frag" data-step="2"><path d="M100 100 H200" class="edge-a"/></g>
+          <circle cx="75" cy="100" r="25" class="node"/><text x="75" y="100" class="lbl">A</text>
+          <circle cx="225" cy="100" r="25" class="node"/><text x="225" y="100" class="lbl">B</text>
+        </svg>
+      </div>
+    </div>
+    <aside class="notes-src">
+      <h4>Script</h4>
+      <p>&ldquo;Say this before the first click.&rdquo;</p>
+      <p class="cue">[ CLICK 1 &mdash; first point ]</p>
+      <p>&ldquo;Say this after it appears.&rdquo;</p>
+      <p class="cue">[ CLICK 2 &mdash; second point, and the edge lights up ]</p>
+      <p class="cue">[ CLICK 3 &mdash; the takeaway ]</p>
+      <h4>If they ask</h4>
+      <ul><li><strong>&ldquo;A likely question?&rdquo;</strong> &mdash; The answer.</li></ul>
+    </aside>
+  </section>
+
+  <section class="slide divider" data-sec="Break" data-n="03" data-min="10">
+    <div class="eyebrow">Halfway</div>
+    <h1>Break</h1>
+    <div class="breakbox">
+      <div class="breakrow">
+        <label for="bmins">Back in</label>
+        <input id="bmins" type="number" min="1" max="60" step="1" value="10" aria-label="Break length in minutes"/>
+        <span>minutes</span>
+        <button id="bgo" type="button">Start</button>
+      </div>
+      <div class="cd" id="bcd">10:00</div>
+      <div class="backat" id="bat"></div>
+    </div>
+    <aside class="notes-src">
+      <p class="cue">[ Type the minutes, press Start. Delete this slide if there is no break. ]</p>
+    </aside>
+  </section>
+
+  <section class="slide divider" data-sec="End" data-n="04" data-min="1">
+    <div class="eyebrow">The end</div>
+    <h1>Thanks</h1>
+    <aside class="notes-src"><p>The speaker window says LAST SLIDE here.</p></aside>
+  </section>
+
+  </div><!-- /stage -->
+
+  <div id="rail">
+    <span class="sec" id="r-sec"></span>
+    <span class="spacer"></span>
+    <span class="num mono" id="r-num"></span>
+    <div id="bar"></div>
+  </div>
+</div>
+
+<div id="ov" role="dialog" aria-label="All slides">
+  <div id="ov-head">
+    <b>All slides</b><span class="sp"></span>
+    <span>click one to jump &nbsp;·&nbsp; arrows to move &nbsp;·&nbsp; enter to go &nbsp;·&nbsp; O or esc to close</span>
+  </div>
+  <div id="ov-grid"></div>
+</div>
+
+<div id="notes"><div class="notes-body" id="notes-body"></div></div>
+
+<div id="help" role="dialog" aria-label="Keyboard shortcuts">
+  <h3>Keys</h3>
+  <dl>
+    <dt>&rarr; &nbsp; space</dt><dd>Next step / slide</dd>
+    <dt>&larr;</dt><dd>Back</dd>
+    <dt>O &nbsp; esc</dt><dd><strong>All slides</strong> &mdash; grid view, click any one to jump</dd>
+    <dt>S</dt><dd><strong>Open the speaker window</strong> &mdash; live slide preview, next slide, notes, timer</dd>
+    <dt>T</dt><dd>Start / pause the session timer (shown in the speaker window)</dd>
+    <dt>N</dt><dd>Notes drawer, in this window &mdash; backup if you only have one screen</dd>
+    <dt>H</dt><dd>Handout view: every slide + every note as one long document, for prep</dd>
+    <dt>R</dt><dd>Reset the timer</dd>
+    <dt>F</dt><dd>Fullscreen</dd>
+    <dt>G</dt><dd>Go to slide number</dd>
+    <dt>?</dt><dd>This panel</dd>
+  </dl>
+  <p class="tiny" style="margin-top:18px">Share <em>only</em> the deck window. Keep the speaker window on your own screen.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  /* each deck gets its own sync channel, from its <title>, so two decks open at once never cross-talk */
+  var SLUG = (document.title || 'deck').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'deck';
+  var CHANNEL = 'deck-' + SLUG, WINNAME = 'speaker-' + SLUG;
+  var stage   = document.getElementById('stage');
+  var slides  = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var N       = slides.length;
+  var cur     = 0, step = 0;
+  var chan    = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null;
+  var speaker = null;
+
+  slides.forEach(function(s,i){ s.dataset.n = String(i+1).padStart(2,'0'); });
+
+  /* Fragments reveal one group per click. Elements sharing the same
+     data-step value appear together — that's how a table row and the
+     matching part of a diagram light up on the same press. */
+  function frags(i){
+    var all = Array.prototype.slice.call(slides[i].querySelectorAll('.frag'));
+    var groups = [], byKey = {}, keys = [], allNumeric = all.length > 0;
+    all.forEach(function(el){
+      var k = el.getAttribute('data-step');
+      if(k === null || k === ''){ allNumeric = false; groups.push([el]); keys.push(null); return; }
+      if(byKey[k]){ byKey[k].push(el); return; }
+      byKey[k] = [el]; groups.push(byKey[k]); keys.push(parseFloat(k));
+      if(isNaN(parseFloat(k))) allNumeric = false;
+    });
+    /* When every fragment carries a numeric data-step, the number decides the
+       order, not where the element happens to sit in the markup. That lets a
+       table row and a diagram label share a step even when they are far apart. */
+    if(allNumeric){
+      var pairs = groups.map(function(g,idx){ return {g:g, k:keys[idx], i:idx}; });
+      pairs.sort(function(a,b){ return a.k === b.k ? a.i - b.i : a.k - b.k; });
+      groups = pairs.map(function(p){ return p.g; });
+    }
+    return groups;
+  }
+  function sayOf(group){
+    for(var i=0;i<group.length;i++){
+      var s = group[i].getAttribute('data-say');
+      if(s) return s;
+    }
+    return (group[0].textContent || '').replace(/\s+/g,' ').trim();
+  }
+
+  function fit(){
+    if(document.body.classList.contains('handout')){ stage.style.transform=''; return; }
+    var k = Math.min((innerWidth-40)/1280, (innerHeight-40)/720);
+    stage.style.transform = 'scale('+k+')';
+  }
+  addEventListener('resize', fit);
+
+  /* ---- build a preview copy of a slide ---- */
+  function preview(i, upto){
+    if(i < 0 || i >= N) return '<div class="pv-end">— end of deck —</div>';
+    var el = slides[i].cloneNode(true);
+    el.classList.add('active');
+    var ns = el.querySelector('.notes-src'); if(ns) ns.parentNode.removeChild(ns);
+    var all = Array.prototype.slice.call(el.querySelectorAll('.frag'));
+    var groups = [], byKey = {}, keys = [], allNumeric = all.length > 0;
+    all.forEach(function(e){
+      var k = e.getAttribute('data-step');
+      if(k === null || k === ''){ allNumeric = false; groups.push([e]); keys.push(null); return; }
+      if(byKey[k]){ byKey[k].push(e); return; }
+      byKey[k] = [e]; groups.push(byKey[k]); keys.push(parseFloat(k));
+      if(isNaN(parseFloat(k))) allNumeric = false;
+    });
+    if(allNumeric){
+      var pr = groups.map(function(g,idx){ return {g:g, k:keys[idx], i:idx}; });
+      pr.sort(function(a,b){ return a.k === b.k ? a.i - b.i : a.k - b.k; });
+      groups = pr.map(function(p){ return p.g; });
+    }
+    groups.forEach(function(g,j){
+      g.forEach(function(e){
+        if(upto === null || j < upto) e.classList.add('on');
+        else e.classList.remove('on');
+      });
+    });
+    el.removeAttribute('id');
+    return el.outerHTML;
+  }
+
+  function stepText(){
+    var f = frags(cur), t = f.length;
+    var last = (cur === N-1);
+    var onward = last ? 'this is the LAST SLIDE — nothing after this'
+                      : 'next click goes to slide ' + (cur+2);
+    if(!t) return 'no build steps  ·  ' + onward;
+    if(step < t){
+      var s = sayOf(f[step]);
+      if(s.length > 78) s = s.slice(0,78) + '…';
+      return 'build ' + step + ' of ' + t + '  ·  next click reveals: ' + (s || '(a diagram)');
+    }
+    return 'all ' + t + ' builds shown  ·  ' + onward;
+  }
+
+  function render(){
+    slides.forEach(function(s,i){ s.classList.toggle('active', i===cur); });
+    frags(cur).forEach(function(g,i){
+      g.forEach(function(el){ el.classList.toggle('on', i<step); });
+    });
+    document.getElementById('r-sec').textContent = slides[cur].dataset.sec || '';
+    document.getElementById('r-num').textContent =
+      String(cur+1).padStart(2,'0') + ' / ' + String(N).padStart(2,'0');
+    document.getElementById('bar').style.width = ((cur)/(N-1)*100) + '%';
+    var src = slides[cur].querySelector('.notes-src');
+    document.getElementById('notes-body').innerHTML = src ? src.innerHTML : '<p>No notes.</p>';
+    location.hash = String(cur+1);
+    sync();
+  }
+
+  function slideMin(i){ return parseFloat(slides[i].getAttribute('data-min')) || 0; }
+  function targetBy(i){
+    var s = 0;
+    for(var j=0;j<=i;j++) s += slideMin(j);
+    return s;
+  }
+
+  function sync(){
+    var src  = slides[cur].querySelector('.notes-src');
+    var head = slides[cur].querySelector('h1,h2');
+    var h2   = slides[cur+1] ? slides[cur+1].querySelector('h1,h2') : null;
+    var h3   = slides[cur+2] ? slides[cur+2].querySelector('h1,h2') : null;
+    var msg = {
+      type:'sync', i:cur, n:N,
+      sec:   slides[cur].dataset.sec || '',
+      title: head ? head.textContent : '',
+      nextTitle: h2 ? h2.textContent : '— end of deck —',
+      thenTitle: h3 ? h3.textContent : '',
+      stp:   stepText(),
+      now:   preview(cur, step),
+      nxt:   preview(cur+1, null),
+      notes: src ? src.innerHTML : '<p>No notes.</p>',
+      elapsed: elapsed(),
+      mins: slideMin(cur), by: targetBy(cur)
+    };
+    if(chan) chan.postMessage(msg);
+    if(speaker && !speaker.closed && speaker.paintAll) speaker.paintAll(msg);
+  }
+
+  function go(i){ i=Math.max(0,Math.min(N-1,i)); if(i!==cur){cur=i;step=0;} render(); }
+  function next(){
+    if(step < frags(cur).length){ step++; render(); }
+    else if(cur < N-1){ go(cur+1); }
+  }
+  function prev(){
+    if(step > 0){ step--; render(); }
+    else if(cur > 0){ cur--; step = frags(cur).length; render(); }
+  }
+
+  /* ---- session timer (speaker window only) ---- */
+  var t0=0, acc=0, running=false;
+  function elapsed(){ return acc + (running ? Date.now()-t0 : 0); }
+  function fmt(ms){
+    var s = Math.max(0, Math.floor(ms/1000));
+    return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  }
+  function toggleTimer(){
+    if(running){ acc = elapsed(); running = false; }
+    else { t0 = Date.now(); running = true; }
+    tick();
+  }
+  function tick(){
+    if(speaker && !speaker.closed && speaker.paintClock)
+      speaker.paintClock(fmt(elapsed()), running);
+  }
+  /* The deck window is usually the one being shared and sitting behind the
+     speaker window, and browsers throttle timers in background windows. So the
+     speaker window drives its own clock from a timestamp instead of waiting to
+     be told the time. This interval is only a fallback. */
+  setInterval(tick, 500);
+
+  /* ---- break countdown, on the break slide ---- */
+  (function(){
+    var mins = document.getElementById('bmins'),
+        btn  = document.getElementById('bgo'),
+        cd   = document.getElementById('bcd'),
+        at   = document.getElementById('bat');
+    if(!btn) return;
+    var end = null;
+    function paint(){
+      if(end === null) return;
+      var left = end - Date.now();
+      if(left <= 0){ cd.textContent = '00:00'; cd.classList.add('done'); at.textContent = 'Time — welcome back.'; return; }
+      cd.textContent = fmt(left);
+      cd.classList.remove('done');
+    }
+    btn.addEventListener('click', function(){
+      var m = Math.max(1, Math.min(60, parseInt(mins.value,10) || 10));
+      mins.value = m;
+      end = Date.now() + m*60000;
+      var d = new Date(end);
+      var hh = d.getHours(), ap = hh >= 12 ? 'pm' : 'am';
+      hh = hh % 12; if(hh === 0) hh = 12;
+      at.textContent = 'Back at ' + hh + ':' + String(d.getMinutes()).padStart(2,'0') + ' ' + ap;
+      cd.classList.remove('done');
+      paint();
+    });
+    mins.addEventListener('input', function(){
+      if(end === null) cd.textContent = fmt((parseInt(mins.value,10)||0)*60000);
+    });
+    setInterval(paint, 500);
+  })();
+
+
+  /* ---- overview grid ---- */
+  var ovOpen = false, ovSel = 0;
+  function ovScale(){
+    var fr = document.querySelectorAll('#ov .ov-frame');
+    for(var i=0;i<fr.length;i++){
+      var sc = fr[i].querySelector('.ov-scale');
+      if(sc) sc.style.transform = 'scale(' + (fr[i].clientWidth/1280) + ')';
+    }
+  }
+  function ovMark(){
+    var cells = document.querySelectorAll('#ov .ov-cell');
+    for(var i=0;i<cells.length;i++){
+      cells[i].classList.toggle('sel', i===ovSel);
+      cells[i].classList.toggle('now', i===cur);
+    }
+    var c = cells[ovSel];
+    if(c && c.scrollIntoView) c.scrollIntoView({block:'nearest'});
+  }
+  function ovBuild(){
+    var grid = document.getElementById('ov-grid');
+    grid.innerHTML = '';
+    slides.forEach(function(s,i){
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'ov-cell';
+      var head = s.querySelector('h1,h2');
+      cell.innerHTML =
+        '<div class="ov-frame"><div class="ov-scale">' + preview(i, null) + '</div></div>' +
+        '<div class="ov-cap"><b>' + String(i+1).padStart(2,'0') + '</b>' +
+        (head ? head.textContent : (s.dataset.sec || '')) + '</div>';
+      cell.addEventListener('click', function(){ ovClose(); go(i); });
+      grid.appendChild(cell);
+    });
+    ovScale(); ovMark();
+  }
+  function ovOpenNow(){
+    if(document.body.classList.contains('handout')) return;
+    ovSel = cur; ovOpen = true;
+    document.getElementById('ov').classList.add('on');
+    ovBuild();
+  }
+  function ovClose(){
+    ovOpen = false;
+    document.getElementById('ov').classList.remove('on');
+  }
+  addEventListener('resize', function(){ if(ovOpen) ovScale(); });
+
+  /* ---- speaker window ---- */
+  function openSpeaker(){
+    speaker = window.open('', WINNAME, 'width=1180,height=940');
+    if(!speaker){ alert('Allow pop-ups for this page, then press S again.'); return; }
+    var deckCSS = document.getElementById('deck-css').textContent;
+    var d = speaker.document;
+    d.open();
+    d.write(
+      '<!doctype html><html><head><meta charset="utf-8"><title>Speaker view</title>'+
+      '<style>'+deckCSS+'</style><style>'+
+      'html,body{overflow:auto!important;height:auto!important;background:#0B1120!important;'+
+        'color:#E7ECF5;margin:0;padding:20px 24px 40px;'+
+        'font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}'+
+      '.top{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap;'+
+        'border-bottom:1px solid #2A3752;padding-bottom:12px;margin-bottom:16px}'+
+      '.clk{font-family:"Cascadia Mono",Consolas,monospace;font-size:40px;'+
+        'font-variant-numeric:tabular-nums;color:#4A5568;transition:color .2s}'+
+      '.clk.run{color:#F0A046}'+
+      '.tlab{font-family:"Cascadia Mono",Consolas,monospace;font-size:11px;'+
+        'letter-spacing:.14em;text-transform:uppercase;color:#6C7A93}'+
+      '.num,.sec{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;'+
+        'letter-spacing:.14em;text-transform:uppercase;color:#6C7A93}'+
+      '.num{color:#A8B3C7}'+
+      '.pace{font-family:"Cascadia Mono",Consolas,monospace;font-size:12.5px;letter-spacing:.06em;'+
+        'margin-left:auto;text-align:right;color:#6C7A93;line-height:1.5}'+
+      '.pace b{color:#A8B3C7;font-weight:600}'+
+      '.pace .ok{color:#4FC3D9}.pace .late{color:#F0A046}'+
+      '.clk.late{color:#F0A046}'+
+      '.previews{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:8px}'+
+      '.cap{font-family:"Cascadia Mono",Consolas,monospace;font-size:11px;letter-spacing:.16em;'+
+        'text-transform:uppercase;color:#6C7A93;margin-bottom:7px}'+
+      '.cap b{color:#F6BC7A;font-weight:600}'+
+      '.frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;'+
+        'border:1px solid #2A3752;background:#111A2C}'+
+      '.scaler{position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:top left}'+
+      '.scaler .slide{padding-bottom:64px}'+
+      '.scaler .slide.divider{background:#16223A}'+
+      '.pv-end{display:grid;place-items:center;height:100%;font-family:"Cascadia Mono",Consolas,monospace;'+
+        'font-size:15px;color:#6C7A93}'+
+      '.stp{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;color:#F6BC7A;'+
+        'background:#2E2113;border-left:3px solid #F0A046;padding:9px 14px;margin:12px 0 18px}'+
+      '.then{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;color:#6C7A93;margin:-4px 0 16px}'+
+      '#ttl{font-size:23px;margin:0 0 14px;line-height:1.15;color:#E7ECF5;max-width:none}'+
+      '#body h4{font-family:"Cascadia Mono",Consolas,monospace;font-size:11px;letter-spacing:.16em;'+
+        'text-transform:uppercase;color:#F6BC7A;margin:20px 0 6px}'+
+      '#body h4:first-child{margin-top:0}'+
+      '#body p,#body li{font-size:16px;line-height:1.62;color:#C3CDDF;margin:0 0 9px;max-width:none}'+
+      '#body .cue{font-family:"Cascadia Mono",Consolas,monospace;font-size:13.5px;color:#F6BC7A;'+
+        'background:#2E2113;border-left:3px solid #F0A046;padding:7px 12px;margin:12px 0;letter-spacing:.03em}'+
+      '#body .stage-dir{font-style:normal;color:#4FC3D9;font-weight:600}'+
+      '#body ul{padding-left:20px;display:block}#body li{margin-bottom:7px}'+
+      '#body strong{color:#FFFFFF}#body em{font-style:normal;color:#F6BC7A}'+
+      '#body code{font-family:"Cascadia Mono",Consolas,monospace;font-size:13.5px;'+
+        'background:#16223A;padding:1px 5px;color:#D5DEEE;border:none}'+
+      '#body pre{font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;background:#0D1626;'+
+        'padding:12px 14px;overflow-x:auto;border:1px solid #1E2A42;color:#D5DEEE}'+
+      '.keys{margin-top:26px;padding-top:14px;border-top:1px solid #2A3752;'+
+        'font-family:"Cascadia Mono",Consolas,monospace;font-size:11px;color:#4A5568;letter-spacing:.1em}'+
+      '</style></head><body>'+
+      '<div class="top"><span class="tlab">session</span>'+
+      '<span class="clk" id="clk">00:00</span>'+
+      '<span class="num" id="num"></span><span class="sec" id="sec"></span>'+
+      '<span class="pace" id="pace"></span></div>'+
+      '<div class="previews">'+
+        '<div><div class="cap">On screen <b>now</b></div>'+
+          '<div class="frame"><div class="scaler" id="fnow"></div></div></div>'+
+        '<div><div class="cap">Next slide</div>'+
+          '<div class="frame"><div class="scaler" id="fnext"></div></div></div>'+
+      '</div>'+
+      '<div class="stp" id="stp"></div>'+
+      '<div class="then" id="then"></div>'+
+      '<h2 id="ttl"></h2><div id="body"></div>'+
+      '<div class="keys">T start/pause timer &nbsp;·&nbsp; &rarr; next &nbsp;·&nbsp; &larr; back &nbsp;·&nbsp; R reset timer</div>'+
+      '</body></html>'
+    );
+    d.close();
+
+    function rescale(){
+      var f = d.querySelectorAll('.frame');
+      for(var i=0;i<f.length;i++){
+        var sc = f[i].querySelector('.scaler');
+        if(sc) sc.style.transform = 'scale(' + (f[i].clientWidth/1280) + ')';
+      }
+    }
+    speaker.addEventListener('resize', rescale);
+
+    speaker.paintClock = function(txt, run){
+      var c = d.getElementById('clk');
+      if(!c) return;
+      c.textContent = txt;
+      c.classList.toggle('run', run);
+    };
+    speaker.paintAll = function(m){
+      if(!d.getElementById('ttl')) return;
+      d.getElementById('num').textContent  = (m.i+1) + ' / ' + m.n;
+      d.getElementById('sec').textContent  = m.sec;
+      d.getElementById('ttl').textContent  = m.title;
+      d.getElementById('stp').textContent  = m.stp;
+      d.getElementById('then').textContent = m.thenTitle ? 'then: ' + m.thenTitle : '';
+      d.getElementById('fnow').innerHTML   = m.now;
+      d.getElementById('fnext').innerHTML  = m.nxt;
+      d.getElementById('body').innerHTML   = m.notes;
+      speaker.__by = m.by; speaker.__mins = m.mins;
+      d.getElementById('pace').innerHTML =
+        'this slide <b>' + m.mins + ' min</b><br>done by <b>' + m.by + ' min</b>';
+      rescale();
+    };
+    if(speaker.__clockTimer) speaker.clearInterval(speaker.__clockTimer);
+    speaker.__clockTimer = speaker.setInterval(function(){
+      var el = speaker.document.getElementById('clk');
+      if(!el) return;
+      el.textContent = fmt(elapsed());
+      el.classList.toggle('run', running);
+      var by = speaker.__by;
+      if(typeof by === 'number' && running){
+        var driftMin = (elapsed()/60000) - by;
+        el.classList.toggle('late', driftMin > 0);
+        var p = speaker.document.getElementById('pace');
+        if(p){
+          var tag = driftMin > 0.5
+            ? '<span class="late">' + driftMin.toFixed(1) + ' min behind</span>'
+            : '<span class="ok">on time</span>';
+          p.innerHTML = 'this slide <b>' + speaker.__mins + ' min</b><br>done by <b>'
+                      + by + ' min</b><br>' + tag;
+        }
+      }
+    }, 250);
+
+    speaker.addEventListener('keydown', function(e){
+      var k = e.key;
+      if(k==='ArrowRight'||k===' '||k==='PageDown'){ next(); e.preventDefault(); }
+      else if(k==='ArrowLeft'||k==='PageUp'){ prev(); e.preventDefault(); }
+      else if(k.toLowerCase()==='t'){ toggleTimer(); e.preventDefault(); }
+      else if(k.toLowerCase()==='r'){ acc=0; t0=Date.now(); tick(); }
+    });
+    sync(); tick();
+  }
+
+  function toggleHandout(){
+    document.body.classList.toggle('handout');
+    var on = document.body.classList.contains('handout');
+    slides.forEach(function(s,i){ s.classList.toggle('active', on ? true : (i===cur)); });
+    fit();
+    if(on) scrollTo(0,0);
+  }
+
+  function typing(t){
+    return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='BUTTON' || t.isContentEditable);
+  }
+
+  addEventListener('keydown', function(e){
+    var k = e.key;
+    if(typing(e.target)){
+      if(k==='Escape') e.target.blur();
+      return;
+    }
+    if(ovOpen){
+      var cols = Math.max(1, Math.round(document.getElementById('ov-grid').clientWidth / 246));
+      if(k==='Escape' || k.toLowerCase()==='o'){ ovClose(); e.preventDefault(); return; }
+      if(k==='Enter' || k===' '){ ovClose(); go(ovSel); e.preventDefault(); return; }
+      if(k==='ArrowRight'){ ovSel = Math.min(N-1, ovSel+1); ovMark(); e.preventDefault(); return; }
+      if(k==='ArrowLeft'){ ovSel = Math.max(0, ovSel-1); ovMark(); e.preventDefault(); return; }
+      if(k==='ArrowDown'){ ovSel = Math.min(N-1, ovSel+cols); ovMark(); e.preventDefault(); return; }
+      if(k==='ArrowUp'){ ovSel = Math.max(0, ovSel-cols); ovMark(); e.preventDefault(); return; }
+      if(k==='Home'){ ovSel = 0; ovMark(); e.preventDefault(); return; }
+      if(k==='End'){ ovSel = N-1; ovMark(); e.preventDefault(); return; }
+      return;
+    }
+    if(k.toLowerCase()==='o' || k==='Escape'){ ovOpenNow(); e.preventDefault(); return; }
+    var help = document.getElementById('help');
+    if(help.classList.contains('on') && k!=='?'){ help.classList.remove('on'); }
+    if(document.body.classList.contains('handout') && k.toLowerCase()!=='h') return;
+    switch(true){
+      case k==='ArrowRight'||k===' '||k==='PageDown'||k==='ArrowDown': next(); e.preventDefault(); break;
+      case k==='ArrowLeft'||k==='PageUp'||k==='ArrowUp': prev(); e.preventDefault(); break;
+      case k==='Home': go(0); break;
+      case k==='End': go(N-1); break;
+      case k.toLowerCase()==='n': document.getElementById('notes').classList.toggle('on'); break;
+      case k.toLowerCase()==='s': openSpeaker(); break;
+      case k.toLowerCase()==='h': toggleHandout(); break;
+      case k.toLowerCase()==='t': toggleTimer(); break;
+      case k.toLowerCase()==='r': acc=0; t0=Date.now(); tick(); break;
+      case k.toLowerCase()==='f':
+        if(document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+        break;
+      case k.toLowerCase()==='g':
+        var g = prompt('Go to slide (1–'+N+'):');
+        if(g) go(parseInt(g,10)-1);
+        break;
+      case k==='?': help.classList.toggle('on'); break;
+    }
+  });
+
+  stage.addEventListener('click', function(e){
+    if(document.body.classList.contains('handout')) return;
+    if(typing(e.target) || e.target.closest('.breakbox')) return;
+    if(e.clientX < innerWidth*0.2) prev(); else next();
+  });
+
+  var h = parseInt(location.hash.slice(1),10);
+  if(h>0 && h<=N) cur = h-1;
+  fit(); render();
+})();
+</script>
