@@ -40,3 +40,7 @@ Two things that go wrong:
 ## PDF
 
 Ctrl+P, Save as PDF, Landscape, and turn on **Background graphics**. One slide per page, every click revealed, notes hidden, dark theme kept.
+
+## License
+
+MIT
